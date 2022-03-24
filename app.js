@@ -1,47 +1,88 @@
-const express = require('express');
-// import express from "express";
+// const express = require("express");
+import express from "express";
 const app = express();
-const mongoose = require('mongoose');
-const Item = require('./models/items');
-// import item from "./models/items.js";
-// import mongoose from "mongoose";
-const mongodb ='mongodb+srv://ravi:Hello1234@cluster0.xbfwm.mongodb.net/item-database?retryWrites=true&w=majority ';
 
-mongoose.connect(mongodb,{useNewUrlParser:true,useUnifiedTopology:true}).then(()=>{
-    console.log('connected')
+app.use(express.urlencoded({ extended: true }));
+// const mongoose = require("mongoose");
+// const Item = require("./models/items");
+import Item from "./models/items.js";
+import mongoose from "mongoose";
+const mongodb =
+  "mongodb+srv://ravi:Hello1234@cluster0.xbfwm.mongodb.net/item-database?retryWrites=true&w=majority ";
+
+mongoose
+  .connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("connected");
     app.listen(3000);
-
-}).catch(err=>console.log(err))
+  })
+  .catch((err) => console.log(err));
 
 app.set("view engine", "ejs");
 
-app.get('/create-item',(req,res)=>{
+// app.get("/create-item", (req, res) => {
+//   const item = new Item({
+//     name: "computer",
+//     price: 60000,
+//   });
+//   item.save().then((result) => res.send(result));
+// });
 
-    const item =new Item({
-        name:'phone',
-        price:2000
-    });
+// app.get("/get-item", (req, res) => {
 
-    item.save().then(result=>res.send(result))
-
-})
-
-
-
-
+//   Item.findById('62321f3c3d6e96d94bebc8f4').then((result) => res.send(result)).catch(err=>console.log(err));
+// });
 
 app.get("/", (req, res) => {
-  const items = [
-    { name: "mobile phone", price: 10000 },
-    { name: "book", price: 300 },
-    { name: "computer", price: 5000 },
-    { name: "monitor", price: 6000 },
-  ];
-  res.render("index", { items });
+  res.redirect("/get-items");
+  // const items = [
+  //   { name: "mobile phone", price: 10000 },
+  //   { name: "book", price: 300 },
+  //   { name: "computer", price: 5000 },
+  //   { name: "monitor", price: 6000 },
+  // ];
+  // res.render("index", { items });
 });
-app.get("/add-item", (req, res) => {
-  res.render("add-item");
-});
+
+app.get('/get-items', (req, res) => {
+
+  Item.find().then(result => {
+
+      res.render('index', { items: result });
+  }).catch(err => console.log(err))
+})
+app.get('/add-item', (req, res) => {
+  res.render('add-item');
+})
+
+app.post('/items', (req, res) => {
+  console.log(req.body)
+  const item = Item(req.body);
+  item.save().then(() => {
+      res.redirect('/get-items')
+  }).catch(err => console.log(err))
+
+})
+app.get('/items/:id', (req, res) => {
+  const id = req.params.id;
+  Item.findById(id).then(result => {
+      console.log('result', result);
+      res.render('item-detail', { item: result })
+  })
+})
+app.delete('/items/:id', (req, res) => {
+  const id = req.params.id;
+  Item.findByIdAndDelete(id).then(result => {
+      res.json({ redirect: '/get-items' })
+  })
+})
+app.put('/items/:id', (req, res) => {
+  const id = req.params.id;
+  Item.findByIdAndUpdate(id, req.body).then(result => {
+      res.json({ msg: 'Updated Successfully' })
+  })
+})
+
 app.use((req, res) => {
-  res.render("error");
-});
+  res.render('error');
+})
